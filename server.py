@@ -330,8 +330,9 @@ def api_scrape():
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        tb = traceback.format_exc()
+        print(tb, file=sys.stderr)
+        return jsonify({"error": str(e), "traceback": tb}), 500
     finally:
         context.close()
         browser.close()
