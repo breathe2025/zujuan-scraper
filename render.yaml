@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: zujuan-scraper
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /ms-playwright

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+zujuan_debug*.html
+zujuan_error.html
+zujuan_filtered.html
+.env

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组卷网试卷抓取工具</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --success: #10b981;
+    --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; color: var(--primary); }
+  .header p { color: var(--text-secondary); margin-top: 4px; }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .form-input {
+    width: 100%; padding: 10px 12px; font-size: 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+  /* Radio group */
+  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
+  .radio-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+  .radio-item input[type="radio"] { accent-color: var(--primary); }
+
+  /* Range inputs */
+  .range-row { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+  .range-row input { width: 80px; padding: 8px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius); text-align: center; }
+  .range-row span { color: var(--text-secondary); font-size: 14px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; font-size: 15px; font-weight: 500;
+    border: none; border-radius: var(--radius); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-outline:hover { background: #eef2ff; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+  .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* Loading */
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Status */
+  .status { padding: 10px 14px; border-radius: var(--radius); font-size: 14px; margin-top: 12px; display: none; }
+  .status.info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; display: block; }
+  .status.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; display: block; }
+  .status.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; display: block; }
+
+  /* Stats bar */
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+  .stats strong { color: var(--text); }
+
+  /* Paper list */
+  .paper-list { list-style: none; }
+  .paper-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .paper-item:last-child { border-bottom: none; }
+  .paper-num { color: var(--text-secondary); font-size: 13px; min-width: 32px; padding-top: 1px; }
+  .paper-info { flex: 1; min-width: 0; }
+  .paper-title { font-size: 14px; font-weight: 500; }
+  .paper-link { font-size: 12px; color: var(--primary); word-break: break-all; }
+  .paper-link:hover { text-decoration: underline; }
+  .paper-id { font-size: 11px; color: var(--text-secondary); }
+
+  /* Actions bar */
+  .actions-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+  .hidden { display: none; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container { padding: 16px 8px; }
+    .card { padding: 16px; }
+    .header h1 { font-size: 22px; }
+    .radio-group { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>📄 组卷网试卷抓取工具</h1>
+    <p>输入组卷网试卷列表页 URL，一键提取试卷名称和链接</p>
+  </div>
+
+  <!-- 输入区域 -->
+  <div class="card">
+    <div class="card-title">🔗 输入 URL</div>
+    <div class="form-group">
+      <label class="form-label" for="urlInput">组卷网试卷列表页地址</label>
+      <input class="form-input" id="urlInput" type="text"
+             placeholder="https://zujuan.xkw.com/gzhx/shijuan/jdcs/t5y2026"
+             value="">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">抓取范围</label>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="mode" value="current" checked>
+          <span>当前页（10套）</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="mode" value="range">
+          <span>指定页码范围</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="mode" value="all">
+          <span>全部试卷</span>
+        </label>
+      </div>
+      <div class="range-row hidden" id="rangeRow">
+        <span>从第</span>
+        <input type="number" id="pageStart" value="1" min="1">
+        <span>页 到第</span>
+        <input type="number" id="pageEnd" value="3" min="1">
+        <span>页</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="scrapeBtn" onclick="doScrape()">
+        🔍 开始抓取
+      </button>
+      <span style="color: var(--text-secondary); font-size: 13px;">
+        首次加载约需 5~15 秒
+      </span>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- 结果区域 -->
+  <div class="card hidden" id="resultCard">
+    <div class="card-title">📋 抓取结果</div>
+    <div class="stats" id="stats"></div>
+    <ul class="paper-list" id="paperList"></ul>
+    <div class="actions-bar">
+      <button class="btn btn-outline btn-sm" onclick="copyAsText()">📋 复制为文本</button>
+      <button class="btn btn-outline btn-sm" onclick="copyAsJSON()">📋 复制为 JSON</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadCSV()">📥 下载 CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let resultData = null;
+
+// 模式切换
+document.querySelectorAll('input[name="mode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('rangeRow').classList.toggle('hidden', r.value !== 'range');
+  });
+});
+
+// 回车键触发抓取
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doScrape();
+});
+
+async function doScrape() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) {
+    showStatus('请输入组卷网 URL', 'error');
+    return;
+  }
+
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const btn = document.getElementById('scrapeBtn');
+  const resultCard = document.getElementById('resultCard');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 抓取中...';
+  resultCard.classList.add('hidden');
+  showStatus('正在加载页面并应用筛选条件...', 'info');
+
+  try {
+    const body = { url, mode };
+    if (mode === 'range') {
+      body.page_start = parseInt(document.getElementById('pageStart').value) || 1;
+      body.page_end = parseInt(document.getElementById('pageEnd').value) || 1;
+    }
+
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      showStatus(data.error || '请求失败', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '🔍 开始抓取';
+      return;
+    }
+
+    resultData = data;
+    renderResults(data);
+    showStatus(`✅ 抓取成功！共 ${data.total_papers} 套试卷`, 'success');
+  } catch (err) {
+    showStatus(`请求失败: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 开始抓取';
+  }
+}
+
+function renderResults(data) {
+  const card = document.getElementById('resultCard');
+  const stats = document.getElementById('stats');
+  const list = document.getElementById('paperList');
+
+  card.classList.remove('hidden');
+
+  const filterDesc = data.filters && Object.keys(data.filters).length
+    ? `筛选: ${JSON.stringify(data.filters)}`
+    : '无筛选';
+  stats.innerHTML = `
+    <span>📊 共 <strong>${data.total_items?.toLocaleString() || '-'}</strong> 套匹配试卷</span>
+    <span>📄 共 <strong>${data.total_pages || '-'}</strong> 页</span>
+    <span>📋 已抓取 <strong>${data.total_papers}</strong> 套</span>
+    <span>🏷️ ${filterDesc}</span>
+  `;
+
+  list.innerHTML = data.papers.map((p, i) => `
+    <li class="paper-item">
+      <span class="paper-num">${i + 1}.</span>
+      <div class="paper-info">
+        <div class="paper-title">${escapeHtml(p.title)}</div>
+        <a class="paper-link" href="${escapeHtml(p.link)}" target="_blank" rel="noopener">${escapeHtml(p.link)}</a>
+        <span class="paper-id">ID: ${p.paper_id}</span>
+      </div>
+    </li>
+  `).join('');
+}
+
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg;
+  s.className = 'status ' + type;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function copyAsText() {
+  if (!resultData) return;
+  const text = resultData.papers.map((p, i) => `${i + 1}. ${p.title}\n   ${p.link}`).join('\n\n');
+  copyToClipboard(text);
+}
+
+function copyAsJSON() {
+  if (!resultData) return;
+  copyToClipboard(JSON.stringify(resultData.papers, null, 2));
+}
+
+function downloadCSV() {
+  if (!resultData) return;
+  const header = '序号,试卷名称,链接,试卷ID\n';
+  const rows = resultData.papers.map((p, i) => `"${i+1}","${p.title}","${p.link}","${p.paper_id}"`).join('\n');
+  const bom = '﻿';
+  const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '组卷网试卷列表.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus('✅ 已复制到剪贴板', 'success');
+  } catch {
+    showStatus('复制失败，请手动选择复制', 'error');
+  }
+}
+</script>
+</body>
+</html>
