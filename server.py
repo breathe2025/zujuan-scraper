@@ -341,7 +341,7 @@ def api_scrape():
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "commit": "089cf3d", "playwright": True})
 
 
 if __name__ == "__main__":
