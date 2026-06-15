@@ -341,7 +341,19 @@ def api_scrape():
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "commit": "089cf3d", "playwright": True})
+    return jsonify({"status": "ok", "commit": "v3"})
+
+@app.route("/api/test-playwright")
+def test_pw():
+    try:
+        pw = sync_playwright().start()
+        browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+        version = browser.version
+        browser.close()
+        pw.stop()
+        return jsonify({"status": "ok", "browser": version})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e), "type": type(e).__name__})
 
 
 if __name__ == "__main__":
